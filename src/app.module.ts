@@ -10,7 +10,7 @@ import { MongooseModule } from '@nestjs/mongoose';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(
-      process.env.MONGO_URI || 'mongodb://mongo:27017/simpleAuthApp',
+      process.env.MONGO_URI || 'mongodb://localhost:27017/simpleAuthApp',
     ),
     UsersModule,
     AuthModule,

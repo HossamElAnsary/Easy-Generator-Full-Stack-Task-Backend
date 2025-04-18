@@ -9,6 +9,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
+import * as compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -66,6 +67,8 @@ async function bootstrap() {
     // Note: will expose at /api/v1/docs
     SwaggerModule.setup('api/v1/docs', app, document);
   }
+
+  app.use(compression());
 
   // 8) Graceful shutdown hooks
   app.enableShutdownHooks();

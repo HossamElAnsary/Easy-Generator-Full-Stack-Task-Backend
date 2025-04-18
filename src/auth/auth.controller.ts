@@ -7,6 +7,7 @@ import {
   Get,
   UseInterceptors,
   ClassSerializerInterceptor,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -25,13 +26,14 @@ import {
 import { SignInDto } from './dto/sign-in.dto';
 import { User } from 'src/users/schemas/user.schema';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Throttle({ default: { limit: 5, ttl: 60 } })
+  @Throttle({ default: { limit: 15, ttl: 60 } })
   @Post('signup')
   @ApiOperation({ summary: 'User Signs Up' })
   @ApiBody({ type: CreateUserDto })
@@ -48,7 +50,7 @@ export class AuthController {
   }
 
   @UseGuards(LocalAuthGuard)
-  @Throttle({ default: { limit: 5, ttl: 60 } })
+  @Throttle({ default: { limit: 15, ttl: 60 } })
   @Post('signin')
   @ApiOperation({ summary: 'User Signs In' })
   @ApiBody({ type: SignInDto })
@@ -58,8 +60,21 @@ export class AuthController {
     description: 'Validation failed (extra or missing fields).',
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
-  async signIn(@Body() signInDto: SignInDto, @Request() req) {
-    return await this.authService.signIn(req.user);
+  async signIn(
+    @Body() signInDto: SignInDto,
+    @Request() req,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken } = await this.authService.signIn(req.user);
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 1000 * 60 * 60, // 60 minutes
+    });
+
+    return { accessToken };
   }
 
   @UseGuards(JwtAuthGuard)

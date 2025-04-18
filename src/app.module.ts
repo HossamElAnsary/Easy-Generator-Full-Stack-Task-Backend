@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -23,9 +23,15 @@ import { APP_GUARD } from '@nestjs/core';
       validationOptions: { abortEarly: true },
     }),
     LoggerModule.forRoot(),
-    MongooseModule.forRoot(
-      process.env.MONGO_URI || 'mongodb://localhost:27017/simpleAuthApp',
-    ),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        uri: config.get<string>('MONGO_URI'),
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }),
+      inject: [ConfigService],
+    }),
     ThrottlerModule.forRoot({
       throttlers: [
         {

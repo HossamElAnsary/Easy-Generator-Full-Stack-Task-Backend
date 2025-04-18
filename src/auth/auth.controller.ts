@@ -24,12 +24,14 @@ import {
 } from '@nestjs/swagger';
 import { SignInDto } from './dto/sign-in.dto';
 import { User } from 'src/users/schemas/user.schema';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   @Post('signup')
   @ApiOperation({ summary: 'User Signs Up' })
   @ApiBody({ type: CreateUserDto })
@@ -46,12 +48,17 @@ export class AuthController {
   }
 
   @UseGuards(LocalAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60 } })
   @Post('signin')
   @ApiOperation({ summary: 'User Signs In' })
   @ApiBody({ type: SignInDto })
   @ApiResponse({ status: 201, description: 'Authenticated successfully.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed (extra or missing fields).',
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials.' })
-  async signIn(@Request() req) {
+  async signIn(@Body() signInDto: SignInDto, @Request() req) {
     return await this.authService.signIn(req.user);
   }
 

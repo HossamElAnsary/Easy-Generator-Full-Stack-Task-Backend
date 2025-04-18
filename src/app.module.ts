@@ -9,6 +9,8 @@ import { Env, EnvSchema } from './config/env.validation';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
 import { LoggerModule } from 'nestjs-pino';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -24,11 +26,19 @@ import { LoggerModule } from 'nestjs-pino';
     MongooseModule.forRoot(
       process.env.MONGO_URI || 'mongodb://localhost:27017/simpleAuthApp',
     ),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 10000,
+          limit: 20,
+        },
+      ],
+    }),
     UsersModule,
     AuthModule,
     TerminusModule,
   ],
   controllers: [AppController, HealthController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
